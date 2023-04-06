@@ -1,7 +1,7 @@
 import azure.functions as func
 import logging
-from functions.initiate_kex import bp as bp1
-from functions.push_signature import bp as bp2
+from initiate_kex import bp as bp1
+from push_signature import bp as bp2
 
 app = func.FunctionApp()
 

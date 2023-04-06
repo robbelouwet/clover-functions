@@ -11,7 +11,7 @@ bp = func.Blueprint()
 
 
 @bp.function_name(name="Push_Sig")
-@bp.route(route="push-sig")
+@bp.route(route="push-sig", methods=["POST"])
 @bp.cosmos_db_input(
     arg_name="documents",
     database_name="clover-db",

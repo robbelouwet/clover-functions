@@ -18,7 +18,7 @@ bp = func.Blueprint()
 
 
 @bp.function_name(name="Initiate_KEX")
-@bp.route(route="initiate-kex")
+@bp.route(route="initiate-kex", methods=["PUT"])
 @bp.cosmos_db_input(
     arg_name="documents",
     database_name="clover-db",
