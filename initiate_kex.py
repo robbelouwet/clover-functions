@@ -6,6 +6,7 @@ from Crypto.Random import get_random_bytes
 from ec_utils import secp256k1, to_secp256k1_point
 from phe import EncryptedNumber, PaillierPublicKey, PaillierPrivateKey
 from eth_utils import decode_hex
+from azure.functions.authorization import login_required
 
 
 bp = func.Blueprint()
@@ -16,7 +17,7 @@ bp = func.Blueprint()
 #                                         0x971e3172b00bbf3f117b25d687c5873bd18759b2d48f7f74d92418742c74afa5fea0ef50ea26f137189b1b842900e448c6e93a7a9370949cf27bb2c5190c076cc550787c3574c552056a7c0aa0eb9ed0a5f248d0503f799cd5750552e6176f2373eccb2cb888483a2ad99923ccf4af681bb40703310c017c89b7c8df98f027d3aee0b417a1faa757a6aa41f4aa36eb67d1f9a9a4b52f04a89463a67c7e8dd5ec854ac1b12dfe200f4e71f1810e3708191536aa9e182135849b00a955739a38df,
 #                                         0xf1d848aacd8f5e721df49bf1ef8dcaa436bd828f2831620e28e9473e0938dac0322ec615bf53d4d9e869a6b4d7fad63416fbe29e4ff6c432d13ab21fb08a3be5e0b0759208aae7f7bebb74bfb6b56d54c1ef638cb29f5cf5b6348b9bf5b309c1f74a38072fab275bb6e66baaf7abcdb92497cd1db5f2bc3a084f6227387502d36d7a240f50d2f4314df7f590c981400aefb224e5162763ba8a4ec3cd9bb8e5d3f6916b664c2763210d276f4c94c559f3d7925426ba5a77b46c82b76de3dd7f8f)
 
-
+@login_required
 @bp.function_name(name="Initiate_KEX")
 @bp.route(route="initiate-kex", methods=["PUT"])
 @bp.cosmos_db_input(
