@@ -34,6 +34,9 @@ bp = func.Blueprint()
 def initiate_key_exchange(req: func.HttpRequest, documents: func.DocumentList, outputDocument: func.Out[func.Document]) -> func.HttpResponse:
     # Set the session key k
     # 39004532284663631990556472554068040036292738395773578375701065423956735386879
+
+    logging.info(f"jwt: {req.headers.get('Authorization')}")
+
     document = documents[0]
     k1 = int.from_bytes(
         get_random_bytes(32), byteorder='big')
