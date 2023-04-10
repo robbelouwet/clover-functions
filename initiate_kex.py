@@ -35,6 +35,7 @@ def initiate_key_exchange(req: func.HttpRequest, documents: func.DocumentList, o
     # 39004532284663631990556472554068040036292738395773578375701065423956735386879
 
     logging.info(f"jwt: {req.headers.get('Authorization')}")
+    logging.info(f"x-ms-client-principal: {req.headers.get('x-ms-client-principal')}")
 
     document = documents[0]
     k1 = int.from_bytes(
