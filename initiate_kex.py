@@ -6,7 +6,6 @@ from Crypto.Random import get_random_bytes
 from ec_utils import secp256k1, to_secp256k1_point
 from phe import EncryptedNumber, PaillierPublicKey, PaillierPrivateKey
 from eth_utils import decode_hex
-from azure.functions.authorization import login_required
 
 
 bp = func.Blueprint()
