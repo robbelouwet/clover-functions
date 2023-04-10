@@ -7,3 +7,8 @@ app = func.FunctionApp()
 
 app.register_functions(bp1)
 app.register_functions(bp2)
+
+@app.function_name(name="TestTrigger")
+@app.route(route="test")
+def main(req):
+    return f'Hello, world!'
