@@ -11,7 +11,7 @@ from azure.functions.authorization import login_required
 bp = func.Blueprint()
 
 
-@login_required
+#@login_required
 @bp.function_name(name="Push_Sig")
 @bp.route(route="push-sig", methods=["PUT"])
 @bp.cosmos_db_input(
