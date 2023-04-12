@@ -20,7 +20,6 @@ bp = func.Blueprint()
     connection_string_setting="CosmosDBConnectionString")
 def push_partial_sig(req: func.HttpRequest, documents: func.DocumentList) -> func.HttpResponse:
 
-    logging.info(f"Authorization: {req.headers.get('Authorization')}")
     logging.info(f"x-ms-client-principal: {req.headers.get('x-ms-client-principal')}")
 
     # parse & save the transaction
