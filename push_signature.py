@@ -1,3 +1,4 @@
+import os
 import azure.functions as func
 import logging
 import json
@@ -5,6 +6,7 @@ from Crypto.Hash import keccak
 from Crypto.Random import get_random_bytes
 from ec_utils import secp256k1, to_secp256k1_point, verify_signature
 from phe import EncryptedNumber, PaillierPublicKey, PaillierPrivateKey
+from azure.cosmos import CosmosClient
 from common import rlp_to_tx
 
 bp = func.Blueprint()
@@ -13,14 +15,15 @@ bp = func.Blueprint()
 #@login_required
 @bp.function_name(name="Push_Sig")
 @bp.route(route="push-sig", methods=["PUT"])
-@bp.cosmos_db_input(
-    arg_name="documents",
-    database_name="clover-db",
-    collection_name="user-wallets",
-    connection_string_setting="CosmosDBConnectionString")
-def push_partial_sig(req: func.HttpRequest, documents: func.DocumentList) -> func.HttpResponse:
+def push_partial_sig(req: func.HttpRequest) -> func.HttpResponse:
 
-    logging.info(f"Authorization: {req.headers.get('Authorization')}")
+    client = CosmosClient.from_connection_string(os.environ["CosmosDBConnectionString"])
+    container = client\
+        .get_database_client("clover-db")\
+        .get_container_client("user-wallets")
+    
+    document = container.read_item("89dee130-6e2b-4066-8e66-7d2e132dc259", "89dee130-6e2b-4066-8e66-7d2e132dc259")
+
     logging.info(f"x-ms-client-principal: {req.headers.get('x-ms-client-principal')}")
 
     # parse & save the transaction
@@ -31,7 +34,7 @@ def push_partial_sig(req: func.HttpRequest, documents: func.DocumentList) -> fun
     print("response:", json.dumps)
 
     # partial signature s'
-    pk = PaillierPublicKey(int(documents[0]["paillier"]["pk"], 16))
+    pk = PaillierPublicKey(int(document["paillier"]["pk"], 16))
     s_accent = EncryptedNumber(
         pk,
         int(resp["s_accent"], 16)
@@ -39,14 +42,14 @@ def push_partial_sig(req: func.HttpRequest, documents: func.DocumentList) -> fun
 
     sk = PaillierPrivateKey(
         pk,
-        int(documents[0]["paillier"]["sk"][0], 16),
-        int(documents[0]["paillier"]["sk"][1], 16)
+        int(document["paillier"]["sk"][0], 16),
+        int(document["paillier"]["sk"][1], 16)
     )
 
     s_accent_decrypted = sk.decrypt(s_accent) % secp256k1.__n__
 
     k1 = sk.decrypt(EncryptedNumber(pk, int(resp["paillier_server_k"], 16)))
-    R = documents[0]["R"]
+    R = document["R"]
     r = int(R["x"], 16)
     s = (pow(k1, -1, secp256k1.__n__) * s_accent_decrypted) % secp256k1.__n__
     yParity = int(R["y"], 16) % 2 == 0
@@ -61,7 +64,7 @@ def push_partial_sig(req: func.HttpRequest, documents: func.DocumentList) -> fun
     h = kec.digest()
 
     # see if we have to flip v again if sig is invalid with this previous v
-    if not verify_signature(documents[0]['wallet'], h, v, r, s):
+    if not verify_signature(document['wallet'], h, v, r, s):
         v = 55 - v  # 'flip' v
 
     return func.HttpResponse(
