@@ -8,6 +8,7 @@ from ec_utils import secp256k1, to_secp256k1_point, verify_signature
 from phe import EncryptedNumber, PaillierPublicKey, PaillierPrivateKey
 from azure.cosmos import CosmosClient
 from common import rlp_to_tx
+from phe import paillier
 
 bp = func.Blueprint()
 
@@ -17,6 +18,10 @@ bp = func.Blueprint()
 def signup(req: func.HttpRequest) -> func.HttpResponse:
 	logging.info(f"x-ms-client-principal: {req.headers.get('x-ms-client-principal')}")
 	body = req.get_json()
+
+	# Paillier key pair
+	pk, sk = paillier.generate_paillier_keypair()
+	
 
 	client = CosmosClient.from_connection_string(os.environ["CosmosDBConnectionString"])
 	container = client \
