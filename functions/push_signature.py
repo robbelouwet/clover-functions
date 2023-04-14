@@ -7,7 +7,7 @@ from Crypto.Random import get_random_bytes
 from ec_utils import secp256k1, to_secp256k1_point, verify_signature
 from phe import EncryptedNumber, PaillierPublicKey, PaillierPrivateKey
 from azure.cosmos import CosmosClient
-from common import rlp_to_tx
+from functions.common import rlp_to_tx
 
 bp = func.Blueprint()
 
@@ -31,8 +31,6 @@ def push_partial_sig(req: func.HttpRequest) -> func.HttpResponse:
     tx_bytes = resp["tx"][2:]
     tx = rlp_to_tx(tx_bytes[2:])
 
-    print("response:", json.dumps)
-
     # partial signature s'
     pk = PaillierPublicKey(int(document["paillier"]["pk"], 16))
     s_accent = EncryptedNumber(
@@ -49,10 +47,10 @@ def push_partial_sig(req: func.HttpRequest) -> func.HttpResponse:
     s_accent_decrypted = sk.decrypt(s_accent) % secp256k1.__n__
 
     k1 = sk.decrypt(EncryptedNumber(pk, int(resp["paillier_server_k"], 16)))
-    R = document["R"]
-    r = int(R["x"], 16)
+    R = k1 * to_secp256k1_point(int(resp["R_client"]["x"], 16), int(resp["R_client"]["y"], 16))
+    r = R.__x__
     s = (pow(k1, -1, secp256k1.__n__) * s_accent_decrypted) % secp256k1.__n__
-    yParity = int(R["y"], 16) % 2 == 0
+    yParity = R.__y__ % 2 == 0
     v = 28 - yParity  # 28 if even, 27 if uneven
 
     if s > secp256k1.__n__ / 2:  # ensure canonical s

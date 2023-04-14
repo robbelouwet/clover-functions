@@ -25,16 +25,15 @@ def initiate_key_exchange(req: func.HttpRequest) -> func.HttpResponse:
 
     logging.info(f"x-ms-client-principal: {req.headers.get('x-ms-client-principal')}")
 
-    k1 = int.from_bytes(
-        get_random_bytes(32), byteorder='big')
+    k1 = int.from_bytes(get_random_bytes(32), byteorder='big')
 
     # calculate R
-    x = int(req.params.get("x"), 16)
-    y = int(req.params.get("y"), 16)
+    # x = int(req.params.get("x"), 16)
+    # y = int(req.params.get("y"), 16)
     # document["wallet"] = req.params.get("wallet")
-    R = k1 * to_secp256k1_point(x, y)
+    R_server = k1 * secp256k1
     # print(f"R: {R}")
-    document['R'] = R.to_dict()
+    # document['R'] = R.to_dict()
 
     # Paillier key pair
     # pk, sk = paillier.generate_paillier_keypair()
@@ -43,19 +42,15 @@ def initiate_key_exchange(req: func.HttpRequest) -> func.HttpResponse:
 
     # multiplicative share of server's x1 share
     pk = PaillierPublicKey(int(document["paillier"]["pk"], 16))
-    paillier_x1 = pk.encrypt(int(document['server_x'], 16))
-    k1_encrypted = pk.encrypt(k1)
+    paillier_server_x = pk.encrypt(int(document['server_x'], 16))
+    paillier_server_k = pk.encrypt(k1)
 
     resp = {
-        "paillier_server_x": hex(paillier_x1._EncryptedNumber__ciphertext),
-        "paillier_server_k": hex(k1_encrypted._EncryptedNumber__ciphertext),
-        "R": R.to_dict(),
-        "paillier_pk": {
-            "g": hex(pk.g),
-            "max_int": hex(pk.max_int),
-            "n": hex(pk.n),
-            "nsquare": hex(pk.nsquare),
-        }
+        "paillier_server_x": hex(paillier_server_x._EncryptedNumber__ciphertext),
+        "paillier_server_k": hex(paillier_server_k._EncryptedNumber__ciphertext),
+        "R_server": R_server.to_dict(),
+        "paillier_pk": hex(pk.n),
+        
     }
 
     container.upsert_item(document)
