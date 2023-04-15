@@ -38,10 +38,10 @@ def exists(params: [dict]) -> bool:
     return len(result_set) != 0 ### result_set is geen list type
     
 
-def try_parse_google(client_principal) -> (bool, str):
+def find_by_google_nameidentifier(client_principal) -> (bool, str):
     for claim in client_principal["claims"]:
         if "nameidentifier" in claim["typ"]:
-            if exists([dict(name='@param_google_nameidentifier', value=claim["val"])]): 
+            if exists(dict(name='@param_google_nameidentifier', value=claim["val"])): 
                 raise exceptions.CosmosResourceExistsError("User already exists")
 
             return True, claim["val"]

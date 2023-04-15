@@ -4,12 +4,8 @@ import uuid
 import azure.functions as func
 import logging
 import json
-from Crypto.Hash import keccak
-from Crypto.Random import get_random_bytes
-from ec_utils import secp256k1, to_secp256k1_point, verify_signature
-from phe import EncryptedNumber, PaillierPublicKey, PaillierPrivateKey
 from azure.cosmos import CosmosClient
-from functions.common import rlp_to_tx, try_parse_google
+from functions.common import find_by_google_nameidentifier
 from phe import paillier
 import base64
 
@@ -22,10 +18,10 @@ def signup(req: func.HttpRequest) -> func.HttpResponse:
 
 	client_principal = json.loads(base64.b64decode(req.headers.get('x-ms-client-principal')))
 	logging.info(f"client principal:\n{client_principal}")
-	success, id = try_parse_google(client_principal)
+	# success, id = find_by_google_nameidentifier(client_principal)
 
-	if not success:
-		return func.HttpResponse("", status_code=404)
+	# if not success:
+	# 	return func.HttpResponse("", status_code=404)
 	
 
 	logging.info(client_principal)
@@ -42,7 +38,7 @@ def signup(req: func.HttpRequest) -> func.HttpResponse:
 	
 	doc = {
 		"id": str(uuid.uuid4()),
-		"google_nameidentifier": id,
+		"google_nameidentifier": "test",
 		"wallet": body["wallet"],
 		"server_x": body["server_x"],
 		"paillier": {
@@ -53,6 +49,7 @@ def signup(req: func.HttpRequest) -> func.HttpResponse:
 			]
 		}
 	}
+	logging.info(doc)
 	logging.info(json.dumps(doc, indent=4))
 	
 	container.upsert_item(doc)
