@@ -1,5 +1,8 @@
+import logging
 from Crypto.Hash import keccak
 from ethereum.utils import ecrecover_to_pub
+from web3 import Web3
+
 
 class Point(object):
     def __init__(self, curve, G: (int, int), q, n):
@@ -46,8 +49,8 @@ class Point(object):
 
     def __verify__(self):
         return (self.__y__ ** 2) % self.__q__ \
-            == \
-            (self.__x__ ** 3 + self.__curve__[0] * self.__x__ + self.__curve__[1]) % self.__q__
+               == \
+               (self.__x__ ** 3 + self.__curve__[0] * self.__x__ + self.__curve__[1]) % self.__q__
 
     def __add_diff__(self, other):
         # print("Adding 2 different points")
@@ -95,6 +98,15 @@ class Point(object):
             "y": hex(self.__y__)
         }
 
+    def extract_wallet(self):
+        public_point_bytes = bytearray.fromhex(f"{self.__x__:064x}{self.__y__:064x}")
+        wallet_hash = keccak.new(digest_bits=256)
+        wallet_hash.update(public_point_bytes)
+        full_wallet = wallet_hash.hexdigest()
+
+        # take the first 40 bits
+        return Web3.to_checksum_address(full_wallet[-40:])
+
 
 class Infinity(Point):
 
@@ -121,11 +133,11 @@ secp256k1 = Point((0, 7),
                   0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141)
 
 
-
 def verify_signature(wallet: str, h: bytes, v: int, r: int, s: int) -> bool:
     wallet_hash = keccak.new(digest_bits=256)
     wallet_hash.update(ecrecover_to_pub(h, v, r, s))
     recovered_wallet = "0x" + wallet_hash.hexdigest()[-40:]
+    logging.info(f"ec_utils:verify_signature, recovered wallet: {recovered_wallet}")
     return recovered_wallet == wallet.lower()
 
 

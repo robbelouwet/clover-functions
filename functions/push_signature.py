@@ -7,7 +7,8 @@ from Crypto.Random import get_random_bytes
 from ec_utils import secp256k1, to_secp256k1_point, verify_signature
 from phe import EncryptedNumber, PaillierPublicKey, PaillierPrivateKey
 from azure.cosmos import CosmosClient
-from functions.common import rlp_to_tx
+from functions.common import rlp_to_tx, find_by_google_nameidentifier, parse_principal_nameidentifier
+import base64
 
 bp = func.Blueprint()
 
@@ -16,15 +17,16 @@ bp = func.Blueprint()
 @bp.function_name(name="Push_Sig")
 @bp.route(route="push-sig", methods=["PUT"])
 def push_partial_sig(req: func.HttpRequest) -> func.HttpResponse:
-
-    client = CosmosClient.from_connection_string(os.environ["CosmosDBConnectionString"])
-    container = client\
-        .get_database_client("clover-db")\
-        .get_container_client("user-wallets")
-    
-    document = container.read_item("89dee130-6e2b-4066-8e66-7d2e132dc259", "89dee130-6e2b-4066-8e66-7d2e132dc259")
-
     logging.info(f"x-ms-client-principal: {req.headers.get('x-ms-client-principal')}")
+
+    client_principal = json.loads(base64.b64decode(req.headers.get('x-ms-client-principal')))
+    logging.info(f"client principal:\n{client_principal}")
+    success, id = parse_principal_nameidentifier(client_principal)
+    
+    if not success:
+        return func.HttpResponse("", status_code=404)
+    
+    document = find_by_google_nameidentifier(id)
 
     # parse & save the transaction
     resp = req.get_json()
@@ -59,11 +61,15 @@ def push_partial_sig(req: func.HttpRequest) -> func.HttpResponse:
 
     kec = keccak.new(digest_bits=256)
     kec.update(bytearray.fromhex(tx_bytes))
-    h = kec.digest()
+
+    logging.info(f"signing 0x{kec.hexdigest()}")
 
     # see if we have to flip v again if sig is invalid with this previous v
-    if not verify_signature(document['wallet'], h, v, r, s):
+    if not verify_signature(document['wallet'], kec.digest(), v, r, s):
         v = 55 - v  # 'flip' v
+
+    if not verify_signature(document['wallet'], kec.digest(), v, r, s):
+        return func.HttpResponse("Invalid signature", status_code=400)
 
     return func.HttpResponse(
         json.dumps({'r': hex(r), 's': hex(s), 'v': hex(v)}),

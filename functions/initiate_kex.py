@@ -8,6 +8,8 @@ from ec_utils import secp256k1, to_secp256k1_point
 from phe import EncryptedNumber, PaillierPublicKey, PaillierPrivateKey
 from azure.cosmos import CosmosClient
 from eth_utils import decode_hex
+from functions.common import parse_principal_nameidentifier, find_by_google_nameidentifier, create_document
+import base64
 
 
 bp = func.Blueprint()
@@ -15,13 +17,15 @@ bp = func.Blueprint()
 
 @bp.function_name(name="Initiate_KEX")
 @bp.route(route="initiate-kex", methods=["PUT"])
-def initiate_key_exchange(req: func.HttpRequest) -> func.HttpResponse:
-    client = CosmosClient.from_connection_string(os.environ["CosmosDBConnectionString"])
-    container = client\
-        .get_database_client("clover-db")\
-        .get_container_client("user-wallets")
+def initiate_key_exchange(req: func.HttpRequest) -> func.HttpResponse:    
+    client_principal = json.loads(base64.b64decode(req.headers.get('x-ms-client-principal')))
+    success, id = parse_principal_nameidentifier(client_principal)
+
+    if not success:
+        return func.HttpResponse("", status_code=404)
     
-    document = container.read_item("89dee130-6e2b-4066-8e66-7d2e132dc259", "89dee130-6e2b-4066-8e66-7d2e132dc259")
+    document = find_by_google_nameidentifier(id)
+    logging.info(f"DOCUMENT: {document}")
 
     logging.info(f"x-ms-client-principal: {req.headers.get('x-ms-client-principal')}")
 
@@ -50,10 +54,9 @@ def initiate_key_exchange(req: func.HttpRequest) -> func.HttpResponse:
         "paillier_server_k": hex(paillier_server_k._EncryptedNumber__ciphertext),
         "R_server": R_server.to_dict(),
         "paillier_pk": hex(pk.n),
-        
     }
 
-    container.upsert_item(document)
+    create_document(document)
 
     # print(f"response:\n{json.dumps(resp, indent=4)}")
 

@@ -19,30 +19,40 @@ def rlp_to_tx(b: str):
     )
     return t
 
-def exists(params: [dict]) -> bool:
+
+def find_by_google_nameidentifier(id: str) -> dict:
     client = CosmosClient.from_connection_string(os.environ["CosmosDBConnectionString"])
     container = client\
         .get_database_client("clover-db")\
         .get_container_client("user-wallets")
     
-    q = "SELECT * FROM c WHERE c.google_nameidentifier = @param_google_nameidentifier"
+    q = f'SELECT * FROM c WHERE c.google_nameidentifier = @param_google_nameidentifier'
     # logging.info("query", q)
     
     
     result_set = container.query_items(
         q,
-        parameters=params,
+        parameters=[dict(name='@param_google_nameidentifier', value=id)],
         enable_cross_partition_query=True
         )
     
-    return len(result_set) != 0 ### result_set is geen list type
+    results = [doc for doc in result_set]
+    if len(results) == 0: raise exceptions.CosmosResourceNotFoundError()
+    elif len(results) > 1: raise exceptions.CosmosAccessConditionFailedError(message="Multiple hits found!")
+
+    return results[0]
+
+def create_document(v: dict):
+    client = CosmosClient.from_connection_string(os.environ["CosmosDBConnectionString"])
+    container = client\
+        .get_database_client("clover-db")\
+        .get_container_client("user-wallets")
+    
+    container.upsert_item(v)
     
 
-def find_by_google_nameidentifier(client_principal) -> (bool, str):
+def parse_principal_nameidentifier(client_principal) -> str:
     for claim in client_principal["claims"]:
         if "nameidentifier" in claim["typ"]:
-            if exists(dict(name='@param_google_nameidentifier', value=claim["val"])): 
-                raise exceptions.CosmosResourceExistsError("User already exists")
-
             return True, claim["val"]
     return False, None
