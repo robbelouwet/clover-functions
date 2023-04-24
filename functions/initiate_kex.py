@@ -1,14 +1,10 @@
-import os
 import azure.functions as func
 import logging
 import json
-from Crypto.Hash import keccak
 from Crypto.Random import get_random_bytes
-from ec_utils import secp256k1, to_secp256k1_point
-from phe import EncryptedNumber, PaillierPublicKey, PaillierPrivateKey
-from azure.cosmos import CosmosClient
-from eth_utils import decode_hex
-from functions.common import parse_principal_nameidentifier, find_by_google_nameidentifier, create_document
+from src.ec_utils import secp256k1
+from phe import PaillierPublicKey
+from src.common import parse_principal_nameidentifier, find_by_google_nameidentifier, create_document
 import base64
 
 

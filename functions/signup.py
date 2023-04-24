@@ -5,7 +5,7 @@ import azure.functions as func
 import logging
 import json
 from azure.cosmos import CosmosClient
-from functions.common import parse_principal_nameidentifier
+from src.common import parse_principal_nameidentifier
 from phe import paillier
 import base64
 
