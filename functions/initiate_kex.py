@@ -1,6 +1,7 @@
 import azure.functions as func
 import logging
 import json
+from Crypto.Hash import keccak
 from Crypto.Random import get_random_bytes
 from src.ec_utils import secp256k1
 from phe import PaillierPublicKey
