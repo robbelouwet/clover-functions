@@ -13,7 +13,7 @@ bp = func.Blueprint()
 
 #@login_required
 @bp.function_name(name="Sign_Up")
-@bp.route(route="sign-up", methods=["POST"])
+@bp.route(route="sign-up", methods=["PUT"])
 def signup(req: func.HttpRequest) -> func.HttpResponse:
 
 	client_principal = json.loads(base64.b64decode(req.headers.get('x-ms-client-principal')))

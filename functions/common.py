@@ -37,9 +37,8 @@ def find_by_google_nameidentifier(id: str) -> dict:
         )
     
     results = [doc for doc in result_set]
-    if len(results) == 0: raise exceptions.CosmosResourceNotFoundError()
-    elif len(results) > 1: raise exceptions.CosmosAccessConditionFailedError(message="Multiple hits found!")
-
+    if len(results) == 0: return None
+    elif len(results) > 1: raise exceptions.CosmosResourceExistsError(message="Multiple hits found!")
     return results[0]
 
 def create_document(v: dict):

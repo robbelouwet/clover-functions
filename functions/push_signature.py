@@ -1,5 +1,6 @@
 import os
 import azure.functions as func
+from azure.core import exceptions
 import logging
 import json
 from Crypto.Hash import keccak
@@ -17,18 +18,20 @@ bp = func.Blueprint()
 @bp.function_name(name="Push_Sig")
 @bp.route(route="push-sig", methods=["PUT"])
 def push_partial_sig(req: func.HttpRequest) -> func.HttpResponse:
-    logging.info(f"x-ms-client-principal: {req.headers.get('x-ms-client-principal')}")
+    logging.info(f"x-ms-client-principal: {req.headers.get('x-ms-client-principal')}")    
 
     client_principal = json.loads(base64.b64decode(req.headers.get('x-ms-client-principal')))
     logging.info(f"client principal:\n{client_principal}")
     success, id = parse_principal_nameidentifier(client_principal)
     
     if not success:
-        return func.HttpResponse("", status_code=404)
+        return func.HttpResponse("Couldn't parse user principal!", status_code=404)
     
     document = find_by_google_nameidentifier(id)
-
-    # parse & save the transaction
+    if document is None:
+        return func.HttpResponse("User not found!", status_code=404)
+    
+    # parse the transaction
     resp = req.get_json()
     tx_bytes = resp["tx"][2:]
     tx = rlp_to_tx(tx_bytes[2:])
@@ -45,10 +48,17 @@ def push_partial_sig(req: func.HttpRequest) -> func.HttpResponse:
         int(document["paillier"]["sk"][0], 16),
         int(document["paillier"]["sk"][1], 16)
     )
+    
+	# verify data origin authentication of server's ephemeral key
+    retrieved_hash = resp["paillier_server_k"]["hmac"]
+    k1 = sk.decrypt(EncryptedNumber(pk, int(resp["paillier_server_k"]["value"], 16)))
+    reconstructed_hmac = keccak.new(digest_bits=256).update(bytearray.fromhex(hex(k1)[2:])).hexdigest()
+    if not retrieved_hash == reconstructed_hmac:
+        return func.HttpResponse("", status_code=401)
+    
 
     s_accent_decrypted = sk.decrypt(s_accent) % secp256k1.__n__
-
-    k1 = sk.decrypt(EncryptedNumber(pk, int(resp["paillier_server_k"], 16)))
+    
     R = k1 * to_secp256k1_point(int(resp["R_client"]["x"], 16), int(resp["R_client"]["y"], 16))
     r = R.__x__
     s = (pow(k1, -1, secp256k1.__n__) * s_accent_decrypted) % secp256k1.__n__
