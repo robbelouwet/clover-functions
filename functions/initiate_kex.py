@@ -40,7 +40,8 @@ def initiate_key_exchange(req: func.HttpRequest) -> func.HttpResponse:
 
 	# hmac to prevent malleability on server's ephemeral key
     paillier_server_k = hex(paillier_server_k._EncryptedNumber__ciphertext)
-    hmac = keccak.new(digest_bits=256).update(bytearray.fromhex(hex(k1)[2:]))
+    hash_input = f"{hex(k1)[2:]}{document['server_x'][2:]}"  # append ephemeral key with server's share without preceding '0x' as hash pre-image
+    hmac = keccak.new(digest_bits=256).update(bytearray.fromhex(hash_input))
     
 
     resp = {

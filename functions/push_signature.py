@@ -51,7 +51,11 @@ def push_partial_sig(req: func.HttpRequest) -> func.HttpResponse:
 	# verify data origin authentication of server's ephemeral key
     retrieved_hash = resp["paillier_server_k"]["hmac"]
     k1 = sk.decrypt(EncryptedNumber(pk, int(resp["paillier_server_k"]["value"], 16)))
-    reconstructed_hmac = keccak.new(digest_bits=256).update(bytearray.fromhex(hex(k1)[2:])).hexdigest()
+    hash_input = f"{hex(k1)[2:]}{document['server_x'][2:]}"  # append ephemeral key with server's share without preceding '0x' as hash pre-image
+    reconstructed_hmac = keccak\
+        .new(digest_bits=256)\
+        .update(bytearray.fromhex(hash_input))\
+        .hexdigest()
     if not retrieved_hash == reconstructed_hmac:
         return func.HttpResponse("", status_code=401)
     
