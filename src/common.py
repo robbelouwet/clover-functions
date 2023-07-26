@@ -44,7 +44,7 @@ def find_by_google_nameidentifier(id: str) -> dict:
 def create_document(v: dict):
     client = CosmosClient.from_connection_string(os.environ["CosmosDBConnectionString"])
     container = client\
-        .get_database_client("clover-db")\
+        .get_database_client("cloverdb")\
         .get_container_client("user-wallets")
     
     container.upsert_item(v)

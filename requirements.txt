@@ -6,4 +6,4 @@ azure-functions
 azure-cosmos
 web3
 phe
-ethereum
+ethereum==2.3.2
