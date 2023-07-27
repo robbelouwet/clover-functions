@@ -11,7 +11,6 @@ bp = func.Blueprint()
 @bp.function_name(name="Log_In")
 @bp.route(route="log-in", methods=["GET"])
 def signup(req: func.HttpRequest) -> func.HttpResponse:
-	
 
 	client_principal = json.loads(base64.b64decode(req.headers.get('x-ms-client-principal')))
 	logging.info(f"client principal:\n{client_principal}")
